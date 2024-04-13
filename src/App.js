@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 const initialFriends = [
   {
     id: 118836,
@@ -20,11 +21,150 @@ const initialFriends = [
 ];
 
 function App() {
+  const [friends, setFriends] = useState(initialFriends);
+  const [showAddFriend, setShowAddFriend] = useState(false);
+  const [selectedFriend, setSelectedFriend] = useState(null);
+
+  function handleShowAddFriend() {
+    setShowAddFriend(!showAddFriend);
+  }
+
+  function handleAddFriend(friend) {
+    setFriends([...friends, friend]);
+    setShowAddFriend(false);
+  }
+
+  function handleSelectFriend(friend) {
+    setSelectedFriend((e) => (e?.id === friend.id ? null : friend));
+  }
+
   return (
-    <div className="App">
-      <header className="App-header">hello world</header>
+    <div className="app">
+      <div className="sidebar">
+        <FriendList
+          friends={friends}
+          handleSelectFriend={handleSelectFriend}
+          selectedFriend={selectedFriend}
+        />
+        {showAddFriend && <FormAddFriend handleAddFriend={handleAddFriend} />}
+        <Button onClick={() => handleShowAddFriend()}>
+          {showAddFriend ? "Close" : "Add Friend"}
+        </Button>
+      </div>
+      {selectedFriend && <FormSplitBill selectedFriend={selectedFriend} />}
     </div>
   );
 }
 
+function FriendList({ friends, handleSelectFriend, selectedFriend }) {
+  return (
+    <ul>
+      {friends.map((friend) => (
+        <Friend
+          friend={friend}
+          key={friend.id}
+          handleSelectFriend={handleSelectFriend}
+          selectedFriend={selectedFriend}
+        />
+      ))}
+    </ul>
+  );
+}
+
+function Friend({ friend, handleSelectFriend, selectedFriend }) {
+  const isSelected = selectedFriend?.id === friend.id;
+  return (
+    <li className={isSelected ? "selected" : ""}>
+      <img src={friend.image} alt={friend.name} />
+      <h3>{friend.name}</h3>
+      {friend.balance < 0 && (
+        <p className="red">
+          You owe {friend.name} ${-friend.balance}
+        </p>
+      )}
+      {friend.balance > 0 && (
+        <p className="green">
+          {friend.name} owes you ${friend.balance}
+        </p>
+      )}
+      {friend.balance === 0 && <p>You and {friend.name} are even</p>}
+      <Button onClick={() => handleSelectFriend(friend)}>
+        {isSelected ? "Close" : "Select"}
+      </Button>
+    </li>
+  );
+}
+
+function Button({ children, onClick }) {
+  return (
+    <button className="button" onClick={onClick}>
+      {children}
+    </button>
+  );
+}
+
+function FormAddFriend({ handleAddFriend }) {
+  const [name, setName] = useState("");
+  const [image, setImage] = useState("https://i.pravatar.cc/48");
+
+  function handleSubmit(event) {
+    event.preventDefault();
+
+    if (!name) return;
+
+    const id = crypto.randomUUID();
+    const newFriend = {
+      id,
+      name,
+      image: `${image}?=${id}`,
+      balance: 0,
+    };
+
+    handleAddFriend(newFriend);
+
+    setImage("https://i.pravatar.cc/48");
+    setName("");
+  }
+
+  return (
+    <form className="form-add-friend" onSubmit={handleSubmit}>
+      <label>🙋‍♀️Friend Name</label>
+      <input
+        type="text"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
+      <label>🌄 Image URL</label>
+      <input
+        type="text"
+        value={image}
+        onChange={(e) => setImage(e.target.value)}
+      />
+      <Button>Add</Button>
+    </form>
+  );
+}
+
+function FormSplitBill({ selectedFriend }) {
+  return (
+    <form className="form-split-bill">
+      <h2>Split a Bill with {selectedFriend.name}</h2>
+
+      <label>💰 Bill value</label>
+      <input type="number" />
+      <label>👨‍💼 Your expense</label>
+      <input type="number" />
+      <label>👥 {selectedFriend.name}'s expense</label>
+      <input type="number" disabled />
+      <label>🤹‍♀️ Who pays the rest?</label>
+
+      <select>
+        <option value="me">Me</option>
+        <option value="friend">{selectedFriend.name}</option>
+      </select>
+
+      <Button>Split bill</Button>
+    </form>
+  );
+}
 export default App;
